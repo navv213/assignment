@@ -2,16 +2,15 @@
 set -e
 echo "Setting up Lyftr AI Scraper..."
 
-# Create virtual environment
-python3.10 -m venv venv
+cd "$(dirname "$0")"  # Ensure we're in project root
+
+# Use python3 (not python3.10) for Mac compatibility
+python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
+playwright install --with-deps chromium
 
-# Install Playwright browsers
-playwright install chromium
-
-echo "Starting server on http://localhost:8000"
+echo "✅ Server ready on http://localhost:8000"
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
