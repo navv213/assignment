@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lyftr AI Scraper</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .form { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="url"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; }
+        button { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .loading { display: none; text-align: center; padding: 20px; }
+        .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; margin: 10px 0; }
+        details { margin: 10px 0; border: 1px solid #eee; border-radius: 6px; overflow: hidden; }
+        summary { padding: 12px; background: #f8f9fa; cursor: pointer; font-weight: 500; }
+        pre { margin: 0; padding: 16px; background: #f6f8fa; font-size: 13px; max-height: 400px; overflow: auto; }
+        .download { background: #28a745; margin: 10px; padding: 8px 16px; }
+        .meta { background: #e7f3ff; padding: 16px; border-radius: 6px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🌐 Lyftr AI Universal Website Scraper</h1>
+    
+    <form id="scrapeForm" class="form">
+        <input name="url" type="url" placeholder="https://example.com" required>
+        <button type="submit">Scrape</button>
+    </form>
+    
+    <div id="loading" class="loading">🔄 Scraping... This may take 30-60 seconds for dynamic sites.</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('scrapeForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const url = formData.get('url');
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+            document.querySelector('button').disabled = true;
+            
+            try {
+                const res = await fetch('/scrape', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if (data.result) {
+                    renderResults(data.result);
+                }
+            } catch (err) {
+                document.getElementById('error').textContent = 'Error: ' + err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.querySelector('button').disabled = false;
+            }
+        };
+        
+        function renderResults(result) {
+            let html = `
+                <div class="meta">
+                    <h3>📄 ${result.meta.title || 'No title'}</h3>
+                    <p>${result.meta.description || ''}</p>
+                    <small>Scraped: ${result.scrapedAt} | Sections: ${result.sections.length} | 
+                    Clicks: ${result.interactions.clicks.length} | Scrolls: ${result.interactions.scrolls}</small>
+                </div>
+            `;
+            
+            if (result.sections.length) {
+                html += '<h3>📋 Sections</h3>';
+                result.sections.forEach(section => {
+                    html += `
+                        <details open>
+                            <summary>${section.label} <span style="color:#666">(${section.type})</span></summary>
+                            <pre>${JSON.stringify(section.content, null, 2)}</pre>
+                        </details>
+                    `;
+                });
+            }
+            
+            html += `
+                <button class="download" onclick="downloadJSON(${JSON.stringify(result)})">
+                    💾 Download Full JSON
+                </button>
+                <details>
+                    <summary>🔧 Interactions & Debug</summary>
+                    <pre>${JSON.stringify(result.interactions, null, 2)}</pre>
+                    ${result.errors.length ? `<pre>${JSON.stringify(result.errors, null, 2)}</pre>` : ''}
+                </details>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function downloadJSON(data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `scrape-${data.url.replace(/[^a-z0-9]/gi, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
