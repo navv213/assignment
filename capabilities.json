@@ -1,0 +1,10 @@
+{
+  "staticscraping": true,
+  "jsrendering": true,
+  "clicktabs": true,
+  "loadmoreclicks": true,
+  "infinitescroll": true,
+  "paginationlinks": false,
+  "noisefiltering": true,
+  "htmltruncation": true
+}
